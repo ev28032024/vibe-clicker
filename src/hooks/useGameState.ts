@@ -40,7 +40,9 @@ export const useGameState = () => {
     return { score: 0, totalClicks: 0 };
   });
 
-  const pendingSaveScore = useRef<number | null>(null);
+  // Track if we just saved and are waiting for chain to update
+  const [justSaved, setJustSaved] = useState(false);
+  const savedScoreRef = useRef<number>(0);
   const hasSyncedFromChain = useRef(false);
 
   // Sync score from blockchain when wallet connects
@@ -50,7 +52,6 @@ export const useGameState = () => {
       const scoreFromChain = Number(chainScore);
       const clicksFromChain = Number(chainClicks);
 
-      // Use the higher score (chain or local)
       if (scoreFromChain > gameState.score) {
         setGameState({
           score: scoreFromChain,
@@ -74,14 +75,22 @@ export const useGameState = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
   }, [gameState]);
 
-  // Refetch on-chain score after successful save
+  // Handle successful transaction
   useEffect(() => {
-    if (isSuccess && pendingSaveScore.current !== null) {
-      pendingSaveScore.current = null;
+    if (isSuccess && savedScoreRef.current > 0) {
+      setJustSaved(true);
       reset();
-      refetchPlayer(); // Refetch to update onChainScore
+      refetchPlayer();
     }
   }, [isSuccess, reset, refetchPlayer]);
+
+  // Clear justSaved flag when on-chain score catches up
+  useEffect(() => {
+    if (justSaved && onChainScore >= savedScoreRef.current) {
+      setJustSaved(false);
+      savedScoreRef.current = 0;
+    }
+  }, [justSaved, onChainScore]);
 
   const handleClick = useCallback(() => {
     setGameState(prev => ({
@@ -94,16 +103,17 @@ export const useGameState = () => {
     setGameState({ score: 0, totalClicks: 0 });
   }, []);
 
-  // Can only save if current score beats on-chain record
-  const canSave = gameState.score > onChainScore;
+  // Can only save if current score beats on-chain record AND not just saved
+  const canSave = gameState.score > onChainScore && !justSaved;
 
   // Manual save to blockchain
   const saveToChain = useCallback(() => {
     if (!isConnected || !VIBETAP_CONTRACT_ADDRESS) return;
-    if (!canSave) return; // Must beat on-chain score
+    if (!canSave) return;
     if (isPending || isConfirming) return;
 
-    pendingSaveScore.current = gameState.score;
+    // Track what score we're saving
+    savedScoreRef.current = gameState.score;
 
     writeContract({
       address: VIBETAP_CONTRACT_ADDRESS,
@@ -119,9 +129,9 @@ export const useGameState = () => {
     handleClick,
     resetGame,
     saveToChain,
-    isSaving: isPending || isConfirming,
-    canSave, // True only when current score > on-chain score
-    onChainScore, // Current record from blockchain
+    isSaving: isPending || isConfirming || justSaved,
+    canSave,
+    onChainScore,
     isContractConfigured: !!VIBETAP_CONTRACT_ADDRESS,
   };
 };
