@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAccount } from "wagmi";
+import { Save, Loader2 } from "lucide-react";
 import UserHeader from "@/components/UserHeader";
 import ScoreDisplay from "@/components/ScoreDisplay";
 import ClickButton from "@/components/ClickButton";
@@ -11,27 +12,35 @@ import OnboardingModal from "@/components/OnboardingModal";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { useGameState } from "@/hooks/useGameState";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
+import { useAuth } from "@/contexts/AuthContext";
 
 type TabId = 'home' | 'leaderboard' | 'profile' | 'settings';
 
 const ONBOARDING_KEY = 'vibetap_onboarding_complete';
 
 const Index = () => {
-  const { address } = useAccount();
-  const { score, totalClicks, handleClick, isSyncing, needsSync } = useGameState();
-  const { leaderboard, getUserRank, isLoading: leaderboardLoading, isContractConfigured } = useLeaderboard();
+  const { address, isConnected } = useAccount();
+  const { isConnected: authConnected } = useAuth();
+  const {
+    score,
+    totalClicks,
+    handleClick,
+    saveToChain,
+    isSaving,
+    hasUnsavedScore,
+    lastSavedScore,
+    isContractConfigured
+  } = useGameState();
+  const { leaderboard, getUserRank, isLoading: leaderboardLoading } = useLeaderboard();
   const [activeTab, setActiveTab] = useState<TabId>('home');
   const [isLoading, setIsLoading] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
-  // Get user's rank from on-chain data
   const userRank = getUserRank(address);
 
   useEffect(() => {
-    // Initial load
     const timer = setTimeout(() => {
       setIsLoading(false);
-      // Check if onboarding was completed
       const completed = localStorage.getItem(ONBOARDING_KEY);
       if (!completed) {
         setShowOnboarding(true);
@@ -53,7 +62,6 @@ const Index = () => {
     );
   }
 
-  // Transform leaderboard data for LeaderboardPanel
   const leaderboardEntries = leaderboard.map(entry => ({
     rank: entry.rank,
     username: entry.username,
@@ -103,18 +111,52 @@ const Index = () => {
             {/* Click button */}
             <ClickButton onClick={handleClick} />
 
-            {/* Sync status */}
-            {isSyncing && (
-              <p className="text-accent text-sm font-medium animate-pulse">
-                Syncing to blockchain...
-              </p>
+            {/* Save Score Button */}
+            {isConnected && isContractConfigured && (
+              <button
+                onClick={saveToChain}
+                disabled={isSaving || !hasUnsavedScore}
+                className={`
+                  min-h-[48px] px-6 py-3 rounded-2xl font-semibold text-base
+                  flex items-center gap-2 transition-all duration-200
+                  ${hasUnsavedScore
+                    ? 'bg-gradient-to-r from-accent to-primary text-white shadow-lg hover:shadow-xl hover:scale-105'
+                    : 'bg-muted text-muted-foreground cursor-not-allowed'
+                  }
+                  disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100
+                `}
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : hasUnsavedScore ? (
+                  <>
+                    <Save className="w-5 h-5" />
+                    <span>Save Score ({score - lastSavedScore} new)</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-5 h-5" />
+                    <span>Score Saved ✓</span>
+                  </>
+                )}
+              </button>
             )}
-            {!isSyncing && needsSync && (
+
+            {/* Status messages */}
+            {!isConnected && (
               <p className="text-muted-foreground text-sm font-medium">
-                Score will sync automatically
+                Connect wallet to save your score on-chain
               </p>
             )}
-            {!isSyncing && !needsSync && (
+            {isConnected && !isContractConfigured && (
+              <p className="text-muted-foreground text-sm font-medium">
+                Contract not configured yet
+              </p>
+            )}
+            {!isSaving && !hasUnsavedScore && isConnected && (
               <p className="text-muted-foreground text-sm font-medium animate-pulse">
                 Tap to earn points!
               </p>
@@ -126,28 +168,20 @@ const Index = () => {
 
   return (
     <div className="min-h-screen min-h-[100dvh] game-gradient-bg flex flex-col">
-      {/* Background decorative elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-accent/10 rounded-full blur-3xl" />
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-secondary/20 rounded-full blur-3xl" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
       </div>
 
-      {/* Content */}
       <div className="relative z-10 flex flex-col min-h-screen min-h-[100dvh] pb-20">
-        {/* Header */}
         <header className="flex-shrink-0 px-4 py-4 safe-area-top">
           <UserHeader />
         </header>
-
-        {/* Dynamic content based on active tab */}
         {renderContent()}
       </div>
 
-      {/* Bottom Navigation */}
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
-
-      {/* Onboarding Modal */}
       <OnboardingModal open={showOnboarding} onComplete={handleOnboardingComplete} />
     </div>
   );
