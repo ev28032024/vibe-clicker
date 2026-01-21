@@ -7,6 +7,7 @@
     "frame": {
         "version": "1",
         "name": "VibeTap",
+        "subtitle": "Competitive tapping game on Base",
         "iconUrl": "https://vibe-clicker.vercel.app/icon.png",
         "homeUrl": "https://vibe-clicker.vercel.app/",
         "imageUrl": "https://vibe-clicker.vercel.app/splash.png",
@@ -19,6 +20,16 @@
             "clicker",
             "web3",
             "competitive"
-        ]
+        ],
+        "heroImageUrl": "https://vibe-clicker.vercel.app/hero.png",
+        "screenshotUrls": [
+            "https://vibe-clicker.vercel.app/screenshot1.png",
+            "https://vibe-clicker.vercel.app/screenshot2.png",
+            "https://vibe-clicker.vercel.app/screenshot3.png"
+        ],
+        "tagLine": "Tap, Save, Compete!",
+        "ogTitle": "VibeTap - Tap to Earn Game",
+        "ogDescription": "The ultimate competitive tapping game on Base. Save your score on-chain and compete globally!",
+        "ogImageUrl": "https://vibe-clicker.vercel.app/hero.png"
     }
 }
