@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from "wagmi";
 import { VIBETAP_ABI, VIBETAP_CONTRACT_ADDRESS } from "@/lib/contract";
 
 interface GameState {
@@ -8,12 +8,25 @@ interface GameState {
 }
 
 const STORAGE_KEY = 'vibetap_game_state';
-const SAVED_SCORE_KEY = 'vibetap_last_saved_score';
 
 export const useGameState = () => {
-  const { isConnected } = useAccount();
+  const { address, isConnected } = useAccount();
   const { writeContract, data: hash, isPending, reset } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+
+  // Read player's current on-chain score
+  const { data: playerData, refetch: refetchPlayer } = useReadContract({
+    address: VIBETAP_CONTRACT_ADDRESS,
+    abi: VIBETAP_ABI,
+    functionName: "getPlayer",
+    args: address ? [address] : undefined,
+    query: {
+      enabled: !!address && !!VIBETAP_CONTRACT_ADDRESS,
+    },
+  });
+
+  // Get on-chain score
+  const onChainScore = playerData ? Number((playerData as [bigint, bigint, bigint])[0]) : 0;
 
   const [gameState, setGameState] = useState<GameState>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -27,33 +40,48 @@ export const useGameState = () => {
     return { score: 0, totalClicks: 0 };
   });
 
-  // Persist lastSavedScore to localStorage so it survives page refresh
-  const [lastSavedScore, setLastSavedScore] = useState(() => {
-    const saved = localStorage.getItem(SAVED_SCORE_KEY);
-    return saved ? parseInt(saved, 10) : 0;
-  });
-
-  // Track the score we're currently saving
   const pendingSaveScore = useRef<number | null>(null);
+  const hasSyncedFromChain = useRef(false);
+
+  // Sync score from blockchain when wallet connects
+  useEffect(() => {
+    if (playerData && !hasSyncedFromChain.current) {
+      const [chainScore, chainClicks] = playerData as [bigint, bigint, bigint];
+      const scoreFromChain = Number(chainScore);
+      const clicksFromChain = Number(chainClicks);
+
+      // Use the higher score (chain or local)
+      if (scoreFromChain > gameState.score) {
+        setGameState({
+          score: scoreFromChain,
+          totalClicks: clicksFromChain,
+        });
+      }
+
+      hasSyncedFromChain.current = true;
+    }
+  }, [playerData, gameState.score]);
+
+  // Reset sync flag when wallet disconnects
+  useEffect(() => {
+    if (!isConnected) {
+      hasSyncedFromChain.current = false;
+    }
+  }, [isConnected]);
 
   // Persist to localStorage
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
   }, [gameState]);
 
-  // Persist lastSavedScore
-  useEffect(() => {
-    localStorage.setItem(SAVED_SCORE_KEY, lastSavedScore.toString());
-  }, [lastSavedScore]);
-
-  // Update lastSavedScore when transaction confirms
+  // Refetch on-chain score after successful save
   useEffect(() => {
     if (isSuccess && pendingSaveScore.current !== null) {
-      setLastSavedScore(pendingSaveScore.current);
       pendingSaveScore.current = null;
-      reset(); // Reset the write contract state for next transaction
+      reset();
+      refetchPlayer(); // Refetch to update onChainScore
     }
-  }, [isSuccess, reset]);
+  }, [isSuccess, reset, refetchPlayer]);
 
   const handleClick = useCallback(() => {
     setGameState(prev => ({
@@ -64,16 +92,17 @@ export const useGameState = () => {
 
   const resetGame = useCallback(() => {
     setGameState({ score: 0, totalClicks: 0 });
-    setLastSavedScore(0);
   }, []);
 
-  // Manual save to blockchain - user clicks button
+  // Can only save if current score beats on-chain record
+  const canSave = gameState.score > onChainScore;
+
+  // Manual save to blockchain
   const saveToChain = useCallback(() => {
     if (!isConnected || !VIBETAP_CONTRACT_ADDRESS) return;
-    if (gameState.score <= lastSavedScore) return;
+    if (!canSave) return; // Must beat on-chain score
     if (isPending || isConfirming) return;
 
-    // Track what score we're saving
     pendingSaveScore.current = gameState.score;
 
     writeContract({
@@ -82,7 +111,7 @@ export const useGameState = () => {
       functionName: "submitScore",
       args: [BigInt(gameState.score), BigInt(gameState.totalClicks)],
     });
-  }, [isConnected, gameState, lastSavedScore, isPending, isConfirming, writeContract]);
+  }, [isConnected, gameState, canSave, isPending, isConfirming, writeContract]);
 
   return {
     score: gameState.score,
@@ -91,8 +120,8 @@ export const useGameState = () => {
     resetGame,
     saveToChain,
     isSaving: isPending || isConfirming,
-    hasUnsavedScore: gameState.score > lastSavedScore,
-    lastSavedScore,
+    canSave, // True only when current score > on-chain score
+    onChainScore, // Current record from blockchain
     isContractConfigured: !!VIBETAP_CONTRACT_ADDRESS,
   };
 };

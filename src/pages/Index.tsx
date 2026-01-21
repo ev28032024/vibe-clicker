@@ -27,8 +27,8 @@ const Index = () => {
     handleClick,
     saveToChain,
     isSaving,
-    hasUnsavedScore,
-    lastSavedScore,
+    canSave,
+    onChainScore,
     isContractConfigured
   } = useGameState();
   const { leaderboard, getUserRank, isLoading: leaderboardLoading } = useLeaderboard();
@@ -111,15 +111,23 @@ const Index = () => {
             {/* Click button */}
             <ClickButton onClick={handleClick} />
 
+            {/* On-chain record */}
+            {isConnected && isContractConfigured && onChainScore > 0 && (
+              <div className="glass-panel rounded-2xl px-6 py-3 text-center">
+                <p className="text-xs text-muted-foreground">Your Record</p>
+                <p className="text-2xl font-bold text-accent">{onChainScore.toLocaleString()}</p>
+              </div>
+            )}
+
             {/* Save Score Button */}
             {isConnected && isContractConfigured && (
               <button
                 onClick={saveToChain}
-                disabled={isSaving || !hasUnsavedScore}
+                disabled={isSaving || !canSave}
                 className={`
                   min-h-[48px] px-6 py-3 rounded-2xl font-semibold text-base
                   flex items-center gap-2 transition-all duration-200
-                  ${hasUnsavedScore
+                  ${canSave
                     ? 'bg-gradient-to-r from-accent to-primary text-white shadow-lg hover:shadow-xl hover:scale-105'
                     : 'bg-muted text-muted-foreground cursor-not-allowed'
                   }
@@ -131,10 +139,10 @@ const Index = () => {
                     <Loader2 className="w-5 h-5 animate-spin" />
                     <span>Saving...</span>
                   </>
-                ) : hasUnsavedScore ? (
+                ) : canSave ? (
                   <>
                     <Save className="w-5 h-5" />
-                    <span>Save Score ({score - lastSavedScore} new)</span>
+                    <span>Save New Record ({score - onChainScore}+ pts)</span>
                   </>
                 ) : (
                   <>
@@ -156,9 +164,9 @@ const Index = () => {
                 Contract not configured yet
               </p>
             )}
-            {!isSaving && !hasUnsavedScore && isConnected && (
+            {!isSaving && !canSave && isConnected && isContractConfigured && (
               <p className="text-muted-foreground text-sm font-medium animate-pulse">
-                Tap to earn points!
+                Beat your record ({onChainScore}) to save!
               </p>
             )}
           </main>
