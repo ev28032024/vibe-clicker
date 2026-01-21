@@ -1,0 +1,17 @@
+{
+    "accountAssociation": {
+        "header": "eyJmaWQiOjAsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHgwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwIn0",
+        "payload": "eyJkb21haW4iOiJ2aWJlLWNsaWNrZXIudmVyY2VsLmFwcCJ9",
+        "signature": "MHgwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA"
+    },
+    "frame": {
+        "version": "1",
+        "name": "VibeTap",
+        "iconUrl": "https://vibe-clicker.vercel.app/icon.png",
+        "homeUrl": "https://vibe-clicker.vercel.app/",
+        "imageUrl": "https://vibe-clicker.vercel.app/splash.png",
+        "buttonTitle": "Play VibeTap",
+        "splashImageUrl": "https://vibe-clicker.vercel.app/splash.png",
+        "splashBackgroundColor": "#0f172a"
+    }
+}
