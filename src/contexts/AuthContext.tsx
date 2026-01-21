@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
+import React, { createContext, useContext, useEffect } from "react";
+import { useAccount, useConnect, useDisconnect } from "wagmi";
 import { useFarcaster } from "./FarcasterContext";
 
 export interface User {
@@ -15,25 +16,23 @@ interface AuthContextType {
   isConnecting: boolean;
   isConnected: boolean;
   isFarcasterUser: boolean;
-  connectWallet: () => Promise<void>;
+  connectWallet: () => void;
   disconnectWallet: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'vibetap_user';
-
 // Generate random avatar URL
-const generateAvatar = (address: string) => {
-  return `https://api.dicebear.com/7.x/identicon/svg?seed=${address}`;
+const generateAvatar = (seed: string) => {
+  return `https://api.dicebear.com/7.x/identicon/svg?seed=${seed}`;
 };
 
 // Generate username from address
 const generateUsername = (address: string) => {
   const names = ['Tapper', 'Clicker', 'Zapper', 'Vibester', 'PointMaster', 'TapKing', 'ClickWizard'];
-  const randomName = names[Math.floor(Math.random() * names.length)];
+  const randomIndex = parseInt(address.slice(-2), 16) % names.length;
   const shortId = address.slice(-4).toUpperCase();
-  return `${randomName}${shortId}`;
+  return `${names[randomIndex]}${shortId}`;
 };
 
 // Shorten wallet address for display
@@ -42,89 +41,67 @@ const shortenAddress = (address: string) => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isInMiniApp, isReady: farcasterReady, user: farcasterUser, signIn: farcasterSignIn } = useFarcaster();
+  const { address, isConnected: walletConnected, isConnecting: walletConnecting } = useAccount();
+  const { connect, connectors, isPending: connectPending } = useConnect();
+  const { disconnect } = useDisconnect();
+  const { isInMiniApp, user: farcasterUser } = useFarcaster();
 
-  const [user, setUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  });
-  const [isConnecting, setIsConnecting] = useState(false);
+  // Build user object from wallet/Farcaster data
+  const user: User | null = React.useMemo(() => {
+    if (!address) return null;
 
-  // Auto-connect when Farcaster user is available
-  useEffect(() => {
-    if (farcasterReady && farcasterUser && !user) {
-      const fid = farcasterUser.fid.toString();
-      const newUser: User = {
-        id: `farcaster-${fid}`,
-        username: farcasterUser.username || farcasterUser.displayName || `Fren${fid}`,
-        avatar: farcasterUser.pfpUrl || generateAvatar(fid),
-        walletAddress: `fid:${fid}`,
-        shortAddress: `FID #${fid}`,
+    // Use Farcaster data if available
+    if (farcasterUser) {
+      return {
+        id: `farcaster-${farcasterUser.fid}`,
+        username: farcasterUser.username || farcasterUser.displayName || `Fren${farcasterUser.fid}`,
+        avatar: farcasterUser.pfpUrl || generateAvatar(address),
+        walletAddress: address,
+        shortAddress: shortenAddress(address),
         farcasterFid: farcasterUser.fid,
       };
-      setUser(newUser);
     }
-  }, [farcasterReady, farcasterUser, user]);
 
+    // Fallback to wallet-derived data
+    return {
+      id: address,
+      username: generateUsername(address),
+      avatar: generateAvatar(address),
+      walletAddress: address,
+      shortAddress: shortenAddress(address),
+    };
+  }, [address, farcasterUser]);
+
+  // Auto-connect in mini-app context
   useEffect(() => {
-    if (user) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-    } else {
-      localStorage.removeItem(STORAGE_KEY);
-    }
-  }, [user]);
-
-  const connectWallet = useCallback(async () => {
-    setIsConnecting(true);
-
-    // If in Farcaster mini-app, try Farcaster sign-in first
-    if (isInMiniApp) {
-      try {
-        await farcasterSignIn();
-        setIsConnecting(false);
-        return;
-      } catch (error) {
-        console.log("Farcaster sign-in failed, falling back to mock wallet");
+    if (isInMiniApp && !walletConnected && !walletConnecting && connectors.length > 0) {
+      // In mini-app, wallet is usually already connected via Base Account
+      const coinbaseConnector = connectors.find(c => c.id === 'coinbaseWalletSDK');
+      if (coinbaseConnector) {
+        connect({ connector: coinbaseConnector });
       }
     }
+  }, [isInMiniApp, walletConnected, walletConnecting, connectors, connect]);
 
-    // Simulate wallet connection delay (fallback for non-Farcaster)
-    await new Promise(resolve => setTimeout(resolve, 1500));
+  const connectWallet = () => {
+    const coinbaseConnector = connectors.find(c => c.id === 'coinbaseWalletSDK');
+    if (coinbaseConnector) {
+      connect({ connector: coinbaseConnector });
+    } else if (connectors.length > 0) {
+      connect({ connector: connectors[0] });
+    }
+  };
 
-    // Generate mock wallet address
-    const mockAddress = '0x' + Array.from({ length: 40 }, () =>
-      Math.floor(Math.random() * 16).toString(16)
-    ).join('');
-
-    const newUser: User = {
-      id: mockAddress,
-      username: generateUsername(mockAddress),
-      avatar: generateAvatar(mockAddress),
-      walletAddress: mockAddress,
-      shortAddress: shortenAddress(mockAddress),
-    };
-
-    setUser(newUser);
-    setIsConnecting(false);
-  }, [isInMiniApp, farcasterSignIn]);
-
-  const disconnectWallet = useCallback(() => {
-    setUser(null);
-  }, []);
+  const disconnectWallet = () => {
+    disconnect();
+  };
 
   return (
     <AuthContext.Provider value={{
       user,
-      isConnecting,
-      isConnected: !!user,
-      isFarcasterUser: !!user?.farcasterFid,
+      isConnecting: walletConnecting || connectPending,
+      isConnected: walletConnected && !!address,
+      isFarcasterUser: !!farcasterUser,
       connectWallet,
       disconnectWallet,
     }}>

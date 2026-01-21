@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useAccount } from "wagmi";
 import UserHeader from "@/components/UserHeader";
 import ScoreDisplay from "@/components/ScoreDisplay";
 import ClickButton from "@/components/ClickButton";
@@ -9,33 +10,25 @@ import SettingsPanel from "@/components/SettingsPanel";
 import OnboardingModal from "@/components/OnboardingModal";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { useGameState } from "@/hooks/useGameState";
-
-// Mock leaderboard data
-const mockLeaderboard = [
-  { rank: 1, username: "TapKing99", score: 1250000 },
-  { rank: 2, username: "SpeedClicker", score: 980000 },
-  { rank: 3, username: "VibeMaster", score: 750000 },
-  { rank: 4, username: "PointHunter", score: 520000 },
-  { rank: 5, username: "ZapQueen", score: 480000 },
-  { rank: 6, username: "ClickWizard", score: 320000 },
-  { rank: 7, username: "TapNinja", score: 290000 },
-  { rank: 8, username: "ScoreChaser", score: 250000 },
-  { rank: 9, username: "FastFinger", score: 180000 },
-  { rank: 10, username: "RankRiser", score: 150000 },
-];
+import { useLeaderboard } from "@/hooks/useLeaderboard";
 
 type TabId = 'home' | 'leaderboard' | 'profile' | 'settings';
 
 const ONBOARDING_KEY = 'vibetap_onboarding_complete';
 
 const Index = () => {
-  const { score, totalClicks, handleClick } = useGameState();
+  const { address } = useAccount();
+  const { score, totalClicks, handleClick, isSyncing, needsSync } = useGameState();
+  const { leaderboard, getUserRank, isLoading: leaderboardLoading, isContractConfigured } = useLeaderboard();
   const [activeTab, setActiveTab] = useState<TabId>('home');
   const [isLoading, setIsLoading] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
+  // Get user's rank from on-chain data
+  const userRank = getUserRank(address);
+
   useEffect(() => {
-    // Simulate initial load
+    // Initial load
     const timer = setTimeout(() => {
       setIsLoading(false);
       // Check if onboarding was completed
@@ -60,12 +53,31 @@ const Index = () => {
     );
   }
 
+  // Transform leaderboard data for LeaderboardPanel
+  const leaderboardEntries = leaderboard.map(entry => ({
+    rank: entry.rank,
+    username: entry.username,
+    avatar: entry.avatar,
+    score: entry.score,
+  }));
+
   const renderContent = () => {
     switch (activeTab) {
       case 'leaderboard':
         return (
           <div className="flex-1 overflow-hidden">
-            <LeaderboardPanel entries={mockLeaderboard} currentUserRank={42} />
+            {!isContractConfigured ? (
+              <div className="p-4 text-center text-muted-foreground">
+                <p>Leaderboard will be available after contract deployment.</p>
+                <p className="text-sm mt-2">Set VITE_CONTRACT_ADDRESS in environment.</p>
+              </div>
+            ) : leaderboardLoading ? (
+              <div className="flex items-center justify-center p-8">
+                <LoadingSpinner size="md" text="Loading leaderboard..." />
+              </div>
+            ) : (
+              <LeaderboardPanel entries={leaderboardEntries} currentUserRank={userRank} />
+            )}
           </div>
         );
       case 'profile':
@@ -91,10 +103,22 @@ const Index = () => {
             {/* Click button */}
             <ClickButton onClick={handleClick} />
 
-            {/* Tap instruction */}
-            <p className="text-muted-foreground text-sm font-medium animate-pulse">
-              Tap to earn points!
-            </p>
+            {/* Sync status */}
+            {isSyncing && (
+              <p className="text-accent text-sm font-medium animate-pulse">
+                Syncing to blockchain...
+              </p>
+            )}
+            {!isSyncing && needsSync && (
+              <p className="text-muted-foreground text-sm font-medium">
+                Score will sync automatically
+              </p>
+            )}
+            {!isSyncing && !needsSync && (
+              <p className="text-muted-foreground text-sm font-medium animate-pulse">
+                Tap to earn points!
+              </p>
+            )}
           </main>
         );
     }
