@@ -12,6 +12,13 @@
         "imageUrl": "https://vibe-clicker.vercel.app/splash.png",
         "buttonTitle": "Play VibeTap",
         "splashImageUrl": "https://vibe-clicker.vercel.app/splash.png",
-        "splashBackgroundColor": "#0f172a"
+        "splashBackgroundColor": "#0f172a",
+        "primaryCategory": "games",
+        "tags": [
+            "games",
+            "clicker",
+            "web3",
+            "competitive"
+        ]
     }
 }
