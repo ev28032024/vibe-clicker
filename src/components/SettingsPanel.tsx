@@ -1,4 +1,4 @@
-import { Moon, Sun, Volume2, VolumeX, Info, ExternalLink } from "lucide-react";
+import { Moon, Sun, Volume2, VolumeX, Info } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useState } from "react";
 
@@ -88,20 +88,8 @@ const SettingsPanel = () => {
             <span className="font-medium text-foreground">About VibeTap</span>
           </div>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            VibeTap is a competitive tapping game where you earn points and climb the global leaderboard. Connect your wallet to save progress.
+            VibeTap is an on-chain tapping game on Base. Tap to earn points, save your score to the blockchain, and compete on the global leaderboard.
           </p>
-        </div>
-
-        <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
-          <a href="#" className="flex items-center gap-1 hover:text-foreground transition-colors">
-            Terms <ExternalLink className="w-3 h-3" />
-          </a>
-          <span>•</span>
-          <a href="#" className="flex items-center gap-1 hover:text-foreground transition-colors">
-            Privacy <ExternalLink className="w-3 h-3" />
-          </a>
-          <span>•</span>
-          <span>v1.0.0</span>
         </div>
       </div>
     </div>

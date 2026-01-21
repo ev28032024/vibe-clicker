@@ -1,10 +1,30 @@
 import { useAuth } from "@/contexts/AuthContext";
+import { useAccount } from "wagmi";
 import { Trophy, Zap, LogOut, Wallet, Loader2 } from "lucide-react";
 import { useGameState } from "@/hooks/useGameState";
+import { useLeaderboard } from "@/hooks/useLeaderboard";
 
 const ProfilePanel = () => {
   const { user, isConnected, connectWallet, disconnectWallet, isConnecting } = useAuth();
+  const { address } = useAccount();
   const { score, totalClicks } = useGameState();
+  const { leaderboard, getUserRank } = useLeaderboard();
+
+  // Get real rank from on-chain data
+  const userRank = getUserRank(address);
+
+  // Calculate points to next rank
+  const getPointsToNextRank = (): number | null => {
+    if (!userRank || userRank <= 1) return null;
+
+    // Find player above current user
+    const playerAbove = leaderboard.find(entry => entry.rank === userRank - 1);
+    if (!playerAbove) return null;
+
+    return playerAbove.score - score + 1;
+  };
+
+  const pointsToNext = getPointsToNextRank();
 
   if (!isConnected) {
     return (
@@ -73,7 +93,7 @@ const ProfilePanel = () => {
         </div>
       </div>
 
-      {/* Rank Card */}
+      {/* Rank Card - Real data */}
       <div className="w-full max-w-sm glass-panel rounded-2xl p-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -82,12 +102,16 @@ const ProfilePanel = () => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Current Rank</p>
-              <p className="text-xl font-bold text-foreground">#42</p>
+              <p className="text-xl font-bold text-foreground">
+                {userRank ? `#${userRank}` : 'Not ranked'}
+              </p>
             </div>
           </div>
           <div className="text-right">
             <p className="text-sm text-muted-foreground">To next rank</p>
-            <p className="text-lg font-semibold text-accent">+2,500</p>
+            <p className="text-lg font-semibold text-accent">
+              {pointsToNext ? `+${pointsToNext.toLocaleString()}` : '—'}
+            </p>
           </div>
         </div>
       </div>
