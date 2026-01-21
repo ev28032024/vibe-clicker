@@ -71,10 +71,9 @@ const LeaderboardPanel = ({ entries, currentUserRank }: LeaderboardPanelProps) =
           onClick={() => setIsExpanded(!isExpanded)}
           className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-muted/50 transition-colors"
         >
-          <ChevronDown 
-            className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${
-              isExpanded ? 'rotate-180' : ''
-            }`} 
+          <ChevronDown
+            className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''
+              }`}
           />
         </button>
       </div>
@@ -88,7 +87,7 @@ const LeaderboardPanel = ({ entries, currentUserRank }: LeaderboardPanelProps) =
               className={`
                 glass-panel rounded-2xl p-3 flex items-center gap-3
                 transition-all duration-200 hover:bg-white/10
-                ${currentUserRank === entry.rank ? 'ring-2 ring-accent' : ''}
+                ${currentUserRank === entry.rank ? 'border-2 border-accent bg-accent/10' : 'border-2 border-transparent'}
               `}
             >
               {/* Rank */}

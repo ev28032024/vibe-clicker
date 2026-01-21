@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { VIBETAP_ABI, VIBETAP_CONTRACT_ADDRESS } from "@/lib/contract";
 
@@ -8,10 +8,11 @@ interface GameState {
 }
 
 const STORAGE_KEY = 'vibetap_game_state';
+const SAVED_SCORE_KEY = 'vibetap_last_saved_score';
 
 export const useGameState = () => {
   const { isConnected } = useAccount();
-  const { writeContract, data: hash, isPending } = useWriteContract();
+  const { writeContract, data: hash, isPending, reset } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
   const [gameState, setGameState] = useState<GameState>(() => {
@@ -26,19 +27,33 @@ export const useGameState = () => {
     return { score: 0, totalClicks: 0 };
   });
 
-  const [lastSavedScore, setLastSavedScore] = useState(0);
+  // Persist lastSavedScore to localStorage so it survives page refresh
+  const [lastSavedScore, setLastSavedScore] = useState(() => {
+    const saved = localStorage.getItem(SAVED_SCORE_KEY);
+    return saved ? parseInt(saved, 10) : 0;
+  });
+
+  // Track the score we're currently saving
+  const pendingSaveScore = useRef<number | null>(null);
 
   // Persist to localStorage
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
   }, [gameState]);
 
+  // Persist lastSavedScore
+  useEffect(() => {
+    localStorage.setItem(SAVED_SCORE_KEY, lastSavedScore.toString());
+  }, [lastSavedScore]);
+
   // Update lastSavedScore when transaction confirms
   useEffect(() => {
-    if (isSuccess) {
-      setLastSavedScore(gameState.score);
+    if (isSuccess && pendingSaveScore.current !== null) {
+      setLastSavedScore(pendingSaveScore.current);
+      pendingSaveScore.current = null;
+      reset(); // Reset the write contract state for next transaction
     }
-  }, [isSuccess, gameState.score]);
+  }, [isSuccess, reset]);
 
   const handleClick = useCallback(() => {
     setGameState(prev => ({
@@ -57,6 +72,9 @@ export const useGameState = () => {
     if (!isConnected || !VIBETAP_CONTRACT_ADDRESS) return;
     if (gameState.score <= lastSavedScore) return;
     if (isPending || isConfirming) return;
+
+    // Track what score we're saving
+    pendingSaveScore.current = gameState.score;
 
     writeContract({
       address: VIBETAP_CONTRACT_ADDRESS,
