@@ -1,0 +1,29 @@
+export const minikitConfig = {
+    accountAssociation: {
+        header: "eyJmaWQiOi0xLCJ0eXBlIjoiYXV0aCIsImtleSI6IjB4NEJiNEUxZDFENzgxMTQwRTE2MThmMDQ4NDQ0Nzc3MGU0MzI1NTBCNiJ9",
+        payload: "eyJkb21haW4iOiJ2aWJlLWNsaWNrZXIudmVyY2VsLmFwcCJ9",
+        signature: "AAAAAAAAAAAAAAAAyhG94Fl3s2MRZwKIYr4qFzl2yhEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAALAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAiSCrVbLAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAul7REO_bo9AFv8iC11NYrLu4WEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASQ_-6NvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAOI8-T97-jMpNEGHE9gPHs8DHBQkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAPhSELIcxQMC9He6VmhtIBncm2etAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABBVwv4lkXoiFWTumBcjlryVH_N2sQypTfAwEouX5Ha-F4kOglEkt8vzkgrWL_eORa1svOWhGpys98RjZ9VyCHC7BsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAZJJkkmSSZJJkkmSSZJJkkmSSZJJkkmSSZJJkkmSSZJI"
+    },
+    miniapp: {
+        name: "VibeTap",
+        subtitle: "Tap to earn and compete",
+        iconUrl: "https://vibe-clicker.vercel.app/icon.png",
+        homeUrl: "https://vibe-clicker.vercel.app/",
+        imageUrl: "https://vibe-clicker.vercel.app/hero.png",
+        splashImageUrl: "https://vibe-clicker.vercel.app/splash.png",
+        splashBackgroundColor: "#0f172a",
+        primaryCategory: "games",
+        buttonTitle: "Play VibeTap",
+        heroImageUrl: "https://vibe-clicker.vercel.app/hero.png",
+        screenshotUrls: [
+            "https://vibe-clicker.vercel.app/screenshot1.png",
+            "https://vibe-clicker.vercel.app/screenshot2.png",
+            "https://vibe-clicker.vercel.app/screenshot3.png"
+        ],
+        tagLine: "Tap, Save, Compete!",
+        tags: ["games", "clicker", "web3", "competitive"],
+        ogTitle: "VibeTap - Tap to Earn Game",
+        ogDescription: "The ultimate competitive tapping game on Base. Save your score on-chain and compete globally!",
+        ogImageUrl: "https://vibe-clicker.vercel.app/hero.png"
+    }
+};
