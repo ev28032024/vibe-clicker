@@ -27,10 +27,18 @@
   <meta name="twitter:image" content="https://vibe-clicker.vercel.app/hero.png" />
 
   <!-- Farcaster Mini-App Metadata -->
-  <meta name="fc:miniapp" content="true" />
-  <meta name="fc:miniapp:image-url" content="https://vibe-clicker.vercel.app/hero.png" />
-  <meta name="fc:miniapp:splash-background-color" content="#0f172a" />
-  <meta name="fc:miniapp:splash-image-url" content="https://vibe-clicker.vercel.app/splash.png" />
+  <meta name="fc:miniapp" content='{
+    "version": "next",
+    "imageUrl": "https://vibe-clicker.vercel.app/hero.png",
+    "button": {
+      "title": "Play Now",
+      "action": {
+        "type": "launch_miniapp",
+        "name": "VibeTap",
+        "url": "https://vibe-clicker.vercel.app"
+      }
+    }
+  }' />
 
   <!-- Base App Metadata -->
   <meta name="base:app_id" content="6971079d5f24b57cc50d3340" />
